@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  # Required to upload SARIF file to CodeQL.
+  # Required to upload SARIF file to CodeQL
   actions: read
   # Require writing security events to upload SARIF file
   security-events: write
