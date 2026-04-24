@@ -1,8 +1,7 @@
----
 name: security
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 permissions:
   # Required to upload SARIF file to CodeQL.
@@ -19,17 +18,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: run osv-scanner
-          uses: google/osv-scanner-action/osv-scanner-action@0B718ABE67CFC1F7
-          with:
-            scan-args: |-
-              --format sarif
-              --output DependenciesAnalysisFull.sarif
-              ./
-          continue-on-error: true
+      - name: Run OSV Scanner
+        uses: google/osv-scanner-action/osv-scanner-action@1f1242919d8a60496dd1874b24b62b2370ed4c78
+        with:
+          scan-args: |-
+            --format sarif
+            --output DependenciesAnalysisFull.sarif
+            ./
+        continue-on-error: true
 
       - name: Upload SARIF to Security Dashboard
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: DependenciesAnalysisFull.sarif
           category: dependencies
+
+  sast-analysis:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@fcd5ab7459e8d91cb1777481980d1b18b4fc6735
+        with:
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: ${{ secrets.SEMGREP_DEPLOYMENT_ID }}
+          generateSarif: "1"
+        continue-on-error: true
+
+      - name: Upload SARIF to Security Dashboard
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: sast
+        if: always()
